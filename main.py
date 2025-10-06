@@ -65,10 +65,11 @@ app.add_middleware(
 # Config DB
 # -------------------------
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
-    "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "emplois"),
+    "host": os.getenv("MYSQLHOST", "localhost"),
+    "user": os.getenv("MYSQLUSER", "root"),
+    "password": os.getenv("MYSQLPASSWORD", ""),
+    "database": os.getenv("MYSQLDATABASE", "emplois"),
+    "port": int(os.getenv("MYSQLPORT", 3306))
 }
 
 db_connection: Optional[mysql.connector.MySQLConnection] = None
@@ -566,3 +567,4 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
