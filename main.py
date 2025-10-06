@@ -1,5 +1,4 @@
 
-# main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,13 +7,52 @@ import traceback
 import os
 import pandas as pd
 from typing import Optional, Dict, Any
+from contextlib import asynccontextmanager  # NOUVEAU IMPORT
 
 from generator import EmploiDuTempsGenerator, DAY_MAP
 
 # -------------------------
+# Lifespan Manager (Modern)
+# -------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("🚀 Démarrage de l'application...")
+    
+    global db_connection, generator
+    
+    # Test de connexion DB
+    try:
+        db_connection = mysql.connector.connect(**DB_CONFIG)
+        print("✅ Connexion DB réussie")
+    except Exception as e:
+        print(f"❌ Connexion DB impossible: {e}")
+        db_connection = None
+
+    if db_connection:
+        generator = EmploiDuTempsGenerator(db_connection, establishment_id=7)
+        generator.load_data()
+        generator.initialize_constraints()
+        print("✅ Générateur initialisé")
+    else:
+        print("⚠️ Générateur non initialisé (DB non disponible)")
+        generator = None
+    
+    yield  # L'application tourne ici
+    
+    # Shutdown
+    print("🛑 Arrêt de l'application...")
+    if db_connection:
+        try:
+            db_connection.close()
+            print("✅ Connexion DB fermée")
+        except Exception:
+            pass
+
+# -------------------------
 # Config FastAPI + CORS
 # -------------------------
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)  # IMPORTANT: lifespan ici
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -42,10 +80,10 @@ generator: Optional[EmploiDuTempsGenerator] = None
 class MoveCoursePayload(BaseModel):
     courseId: int
     oldDay: str
-    oldPeriod: str  # ex: "08:00-10:00"
+    oldPeriod: str
     oldClassroom: str
     newDay: str
-    newPeriod: str  # ex: "10:00-12:00"
+    newPeriod: str
     newClassroom: str
 
 
