@@ -90,30 +90,6 @@ class MoveCoursePayload(BaseModel):
 # -------------------------
 # Hooks de cycle de vie
 # -------------------------
-@app.on_event("startup")
-def on_startup():
-    global db_connection, generator
-    try:
-        db_connection = mysql.connector.connect(**DB_CONFIG)
-    except Exception as e:
-        print("❌ Connexion DB impossible:", e)
-        db_connection = None
-
-    if db_connection:
-        generator = EmploiDuTempsGenerator(db_connection, establishment_id=7)
-        generator.load_data()
-        generator.initialize_constraints()
-        # ne génère pas ici: on le fera à la 1re demande si besoin
-
-
-@app.on_event("shutdown")
-def on_shutdown():
-    global db_connection
-    if db_connection:
-        try:
-            db_connection.close()
-        except Exception:
-            pass
 
 
 # -------------------------
